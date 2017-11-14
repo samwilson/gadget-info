@@ -64,7 +64,11 @@ class Run extends Command {
 		$this->io->writeln( "$total found" );
 
 		// Get CSV file ready.
-		$csvFile = fopen( __DIR__ . '/../../var/data.csv', 'w' );
+		$varDir = __DIR__ . '/../../var';
+		if ( !is_dir( $varDir ) ) {
+			mkdir( $varDir );
+		}
+		$csvFile = fopen( "$varDir/data.csv", 'w' );
 		fputcsv( $csvFile, [ 'wiki', 'gadget', 'users_total', 'users_active', 'default' ] );
 
 		foreach ( $wikiUrls as $num => $url ) {
@@ -80,21 +84,21 @@ class Run extends Command {
 		$pageCrawler = new Crawler();
 		// Note the slightly odd way of ensuring the HTML content is loaded as UTF8.
 		$pageCrawler->addHtmlContent( $pageHtml, 'UTF-8' );
-		$table = $pageCrawler->filterXPath("//table[contains(@class, 'wikitable')]//tr");
-		if ($table->count() === 0) {
+		$table = $pageCrawler->filterXPath( "//table[contains(@class, 'wikitable')]//tr" );
+		if ( $table->count() === 0 ) {
 			$this->io->writeln(  "Nothing found for $usageUrl" );
 			return;
 		}
-		foreach ($table as $row) {
-			if ($row->childNodes[0]->tagName === 'th') {
+		foreach ( $table as $row ) {
+			if ( $row->childNodes->item( 0 )->tagName === 'th' ) {
 				// Ignore table headers.
 				continue;
 			}
-			$gadgetName = $row->childNodes[0]->nodeValue;
-			$usersTotal = filter_var( $row->childNodes[1]->nodeValue, FILTER_SANITIZE_NUMBER_INT );
+			$gadgetName = $row->childNodes->item( 0 )->nodeValue;
+			$usersTotal = filter_var( $row->childNodes->item( 1 )->nodeValue, FILTER_SANITIZE_NUMBER_INT );
 			if ( is_numeric( $usersTotal ) && (int)$usersTotal > 0 ) {
-				$usersActive = isset( $row->childNodes[2]->nodeValue )
-					? filter_var( $row->childNodes[2]->nodeValue, FILTER_SANITIZE_NUMBER_INT )
+				$usersActive = isset( $row->childNodes->item( 2 )->nodeValue )
+					? filter_var( $row->childNodes->item( 2 )->nodeValue, FILTER_SANITIZE_NUMBER_INT )
 					: '';
 				$default = 0;
 			} else {
